@@ -222,6 +222,29 @@ def process_data(main_rows, conv_data):
     for (ad_name, cam, ym), d in ads.items():
         if d['c'] < 1:
             continue
+
+        # Derived metrics (matching original process_monthly_data.py)
+        ctr = round((d['cl'] / d['i'] * 100) if d['i'] > 0 else 0, 2)
+        er = round((d['eg'] / d['i'] * 100) if d['i'] > 0 else 0, 2)
+        tvr = round((d['tv'] / d['i'] * 100) if d['i'] > 0 else 0, 2)
+        lcr = round((d['lp'] / d['cl'] * 100) if d['cl'] > 0 else 0, 2)
+        cls = round((d['su'] / d['lp_gtm'] * 100) if d['lp_gtm'] > 0 else 0, 2)
+        cpsu = round(d['c'] / d['su']) if d['su'] > 0 else 0
+        cpsb = round(d['c'] / d['sb']) if d['sb'] > 0 else 0
+        cpm = round(d['c'] / d['i'] * 1000, 2) if d['i'] > 0 else 0
+        cpv = round(d['c'] / d['tv'], 3) if d['tv'] > 0 else 0
+
+        # CAC Payback (months)
+        if d['sb'] > 0 and d['sb_val'] > 0:
+            arpu_monthly = d['sb_val'] / d['sb']
+            cpa_sub = d['c'] / d['sb']
+            cap = round(cpa_sub / arpu_monthly) if arpu_monthly > 0 else 0
+        else:
+            cap = 0
+
+        # Activation Rate
+        ar = round((d['sb'] / d['su'] * 100) if d['su'] > 0 else 0, 1)
+
         rec = {
             'n': ad_name, 'cam': cam, 'ym': ym,
             's': d['s'], 't': d['t'], 'f': get_funnel(cam),
@@ -229,6 +252,10 @@ def process_data(main_rows, conv_data):
             'eg': d['eg'], 'tv': d['tv'],
             'lp': round(d['lp']), 'lp_gtm': round(d['lp_gtm']),
             'su': round(d['su']), 'sb': round(d['sb']),
+            'ctr': ctr, 'er': er, 'tvr': tvr,
+            'lcr': lcr, 'cls': cls,
+            'cpsu': cpsu, 'cpsb': cpsb,
+            'cpm': cpm, 'cpv': cpv, 'cap': cap, 'ar': ar,
             'su_smb': round(d['su_smb']), 'su_acc': round(d['su_acc']),
             'web': round(d['web']), 'ebook': round(d['ebook']),
             'guia': round(d['guia']), 'inf_emp': round(d['inf_emp']),
