@@ -92,15 +92,26 @@ def get_conversions(conv_name, value_field='all_conversions', extra_fields=None)
     )
 
 def get_conversions_contains(conv_name_part, value_field='all_conversions', extra_fields=None):
-    """Get conversion data where conversion_action_name contains the given string."""
+    """Get conversion data where conversion_action_name contains the given string.
+    Falls back to fetching ALL conversions and filtering in Python if API rejects contains syntax."""
     fields = ['ad_name', 'campaign_name', 'year_month', 'conversion_action_name', value_field]
     if extra_fields:
         fields.extend(extra_fields)
-    return windsor_get(
-        fields=fields,
-        accounts=ACCOUNTS,
-        filters=f'conversion_action_name=~{conv_name_part}'
-    )
+    # Try different contains syntaxes, fallback to fetch-all + filter in Python
+    for syntax in [f'conversion_action_name~{conv_name_part}',
+                   f'conversion_action_name=~{conv_name_part}']:
+        try:
+            return windsor_get(fields=fields, accounts=ACCOUNTS, filters=syntax)
+        except Exception:
+            pass
+    # Fallback: fetch all conversions, filter in Python
+    print(f"    Contains filter not supported, fetching all and filtering for '{conv_name_part}'...")
+    try:
+        all_rows = windsor_get(fields=fields, accounts=ACCOUNTS)
+        return [r for r in all_rows if conv_name_part.lower() in r.get('conversion_action_name', '').lower()]
+    except Exception as e:
+        print(f"    Fallback also failed: {e}")
+        return []
 
 # ============================================================
 # DATA PROCESSING
@@ -322,7 +333,11 @@ def main():
     conv_data = {}
 
     print("[2/10] Fetching any_page_view...")
-    conv_data['any_page_view'] = get_conversions_contains('any_page_view')
+    try:
+        conv_data['any_page_view'] = get_conversions_contains('any_page_view')
+    except Exception as e:
+        print(f"    WARNING: Failed to fetch any_page_view: {e}")
+        conv_data['any_page_view'] = []
     print(f"  → {len(conv_data['any_page_view'])} rows\n")
 
     print("[3/10] Fetching first_account_created...")
@@ -352,11 +367,19 @@ def main():
     print(f"  → {len(conv_data['user_logged_in_7d'])} rows\n")
 
     print("[8/10] Fetching Submit_form variants...")
-    conv_data['submit_form'] = get_conversions_contains('Submit_form')
+    try:
+        conv_data['submit_form'] = get_conversions_contains('Submit_form')
+    except Exception as e:
+        print(f"    WARNING: Failed to fetch submit_form: {e}")
+        conv_data['submit_form'] = []
     print(f"  → {len(conv_data['submit_form'])} rows\n")
 
     print("[9/10] Fetching first_account_created variants...")
-    conv_data['fac_variants'] = get_conversions_contains('first_account_created')
+    try:
+        conv_data['fac_variants'] = get_conversions_contains('first_account_created')
+    except Exception as e:
+        print(f"    WARNING: Failed to fetch fac_variants: {e}")
+        conv_data['fac_variants'] = []
     print(f"  → {len(conv_data['fac_variants'])} rows\n")
 
     print("[10/10] Fetching accountex, hubspot, partner_contacted...")
