@@ -184,9 +184,9 @@ def process_data(main_rows, conv_data):
                 else:
                     d['lp'] += val
             elif conv_type == 'first_account_created':
-                d['su'] += r.get('conversions', 0) or 0
+                d['su'] += r.get('all_conversions', 0) or 0
             elif conv_type == 'first_account_sub_started':
-                d['sb'] += r.get('conversions', 0) or 0
+                d['sb'] += r.get('all_conversions', 0) or 0
                 d['sb_val'] += r.get('all_conversion_value', 0) or 0
             elif conv_type == 'webinar':
                 d['web'] += r.get('all_conversions', 0) or 0
@@ -341,29 +341,48 @@ def main():
     print(f"  → {len(conv_data['any_page_view'])} rows\n")
 
     print("[3/10] Fetching first_account_created...")
-    conv_data['first_account_created'] = get_conversions(
-        'first_account_created', value_field='conversions')
+    try:
+        conv_data['first_account_created'] = get_conversions('first_account_created')
+    except Exception as e:
+        print(f"    WARNING: Failed to fetch first_account_created: {e}")
+        conv_data['first_account_created'] = []
     print(f"  → {len(conv_data['first_account_created'])} rows\n")
 
     print("[4/10] Fetching first_account_sub_started...")
-    conv_data['first_account_sub_started'] = windsor_get(
-        fields=['ad_name','campaign_name','year_month','conversion_action_name',
-                'conversions','all_conversion_value'],
-        accounts=ACCOUNTS,
-        filters='conversion_action_name=first_account_sub_started'
-    )
+    try:
+        conv_data['first_account_sub_started'] = windsor_get(
+            fields=['ad_name','campaign_name','year_month','conversion_action_name',
+                    'all_conversions','all_conversion_value'],
+            accounts=ACCOUNTS,
+            filters='conversion_action_name=first_account_sub_started'
+        )
+    except Exception as e:
+        print(f"    WARNING: Failed to fetch first_account_sub_started: {e}")
+        conv_data['first_account_sub_started'] = []
     print(f"  → {len(conv_data['first_account_sub_started'])} rows\n")
 
     print("[5/10] Fetching webinar_registered...")
-    conv_data['webinar'] = get_conversions('webinar_registered')
+    try:
+        conv_data['webinar'] = get_conversions('webinar_registered')
+    except Exception as e:
+        print(f"    WARNING: Failed to fetch webinar: {e}")
+        conv_data['webinar'] = []
     print(f"  → {len(conv_data['webinar'])} rows\n")
 
     print("[6/10] Fetching qualification_v2...")
-    conv_data['qualification'] = get_conversions('qualification_v2')
+    try:
+        conv_data['qualification'] = get_conversions('qualification_v2')
+    except Exception as e:
+        print(f"    WARNING: Failed to fetch qualification: {e}")
+        conv_data['qualification'] = []
     print(f"  → {len(conv_data['qualification'])} rows\n")
 
     print("[7/10] Fetching user_logged_in_7d...")
-    conv_data['user_logged_in_7d'] = get_conversions('user_logged_in_7d')
+    try:
+        conv_data['user_logged_in_7d'] = get_conversions('user_logged_in_7d')
+    except Exception as e:
+        print(f"    WARNING: Failed to fetch user_logged_in_7d: {e}")
+        conv_data['user_logged_in_7d'] = []
     print(f"  → {len(conv_data['user_logged_in_7d'])} rows\n")
 
     print("[8/10] Fetching Submit_form variants...")
